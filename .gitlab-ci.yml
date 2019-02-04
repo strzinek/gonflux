@@ -1,0 +1,60 @@
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+
+before_script:
+  - docker info
+
+stages:
+    - build
+    - push-to-registry
+    - deploy
+    - publish
+
+compile:
+    stage: build
+    script:
+      - docker build -f Dockerfile -t $IMAGE_NAME .
+      - docker tag $IMAGE_NAME $IMAGE_NAME:$IMAGE_TAG
+
+gitlab-push:
+    stage: push-to-registry
+    script:
+      - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+      - docker push $IMAGE_NAME:$IMAGE_TAG
+    only:
+      - master
+
+docker-server-run:
+    stage: deploy
+    when: manual
+    script:
+      - ssh $DOCKER_DEPLOY_HOST "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
+      - ssh $DOCKER_DEPLOY_HOST "docker pull $IMAGE_NAME:$IMAGE_TAG"
+      - ssh $DOCKER_DEPLOY_HOST "docker rm -vf $CI_PROJECT_NAME; exit 0"
+      - ssh $DOCKER_DEPLOY_HOST "docker run --name=$CI_PROJECT_NAME -t --restart=always -p 2055:2055/udp -e METHOD='udp' -e OUT='192.168.8.82:8089' -d $IMAGE_NAME:$IMAGE_TAG"
+    environment:
+      name: docker-server
+      url: $DOCKER_RUNTIME_URL
+    only:
+      - master
+
+dockerhub-push:
+    stage: publish
+    when: manual
+    script:
+      - docker tag $IMAGE_NAME $DOCKERHUB_REPO
+      - docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
+      - docker push $DOCKERHUB_REPO
+    only:
+      - master
+
+github-push:
+    stage: publish
+    when: manual
+    script:
+      - git clone --bare $CI_REPOSITORY_URL
+      - cd $CI_PROJECT_NAME.git
+      - git push --mirror "https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/$GITHUB_USERNAME/$CI_PROJECT_NAME.git"
+    only:
+      - master
