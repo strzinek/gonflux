@@ -8,8 +8,8 @@ before_script:
 stages:
     - build
     - push-to-registry
-    - deploy
     - publish
+    - deploy
 
 compile:
     stage: build
