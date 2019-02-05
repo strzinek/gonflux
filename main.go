@@ -221,7 +221,7 @@ func main() {
 
 	}
 
-	/* Start listerning on the specified port */
+	/* Start listening on the specified port */
 	log.Printf("Start listening on %v and sending to %v %v\n", inSource, outMethod, outDestination)
 	addr, err := net.ResolveUDPAddr("udp", inSource)
 	if err != nil {
