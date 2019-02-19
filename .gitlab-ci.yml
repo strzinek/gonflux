@@ -8,8 +8,8 @@ before_script:
 stages:
     - build
     - push-to-registry
-    - publish
     - deploy
+    - publish
 
 compile:
     stage: build
@@ -22,20 +22,6 @@ gitlab-push:
     script:
       - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
       - docker push $IMAGE_NAME:$IMAGE_TAG
-    only:
-      - master
-
-docker-server-run:
-    stage: deploy
-    when: manual
-    script:
-      - ssh $DOCKER_DEPLOY_HOST "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
-      - ssh $DOCKER_DEPLOY_HOST "docker pull $IMAGE_NAME:$IMAGE_TAG"
-      - ssh $DOCKER_DEPLOY_HOST "docker rm -vf $CI_PROJECT_NAME; exit 0"
-      - ssh $DOCKER_DEPLOY_HOST "docker run --name=$CI_PROJECT_NAME -t --restart=always -p 2055:2055/udp -e METHOD='udp' -e OUT='192.168.8.82:8089' -d $IMAGE_NAME:$IMAGE_TAG"
-    environment:
-      name: docker-server
-      url: $DOCKER_RUNTIME_URL
     only:
       - master
 
@@ -56,5 +42,19 @@ github-push:
       - git clone --bare $CI_REPOSITORY_URL
       - cd $CI_PROJECT_NAME.git
       - git push --mirror "https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/$GITHUB_USERNAME/$CI_PROJECT_NAME.git"
+    only:
+      - master
+
+docker-server-run:
+    stage: deploy
+    when: manual
+    script:
+      - ssh $DOCKER_DEPLOY_HOST "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
+      - ssh $DOCKER_DEPLOY_HOST "docker pull $IMAGE_NAME:$IMAGE_TAG"
+      - ssh $DOCKER_DEPLOY_HOST "docker rm -vf $CI_PROJECT_NAME; exit 0"
+      - ssh $DOCKER_DEPLOY_HOST "docker run --name=$CI_PROJECT_NAME -t --restart=always -p 2055:2055/udp -e METHOD='udp' -e OUT='192.168.8.82:8089' -d $IMAGE_NAME:$IMAGE_TAG"
+    environment:
+      name: docker-server
+      url: $DOCKER_RUNTIME_URL
     only:
       - master
