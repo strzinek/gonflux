@@ -41,6 +41,9 @@ COPY --from=builder /go/bin/gonflux /go/bin/gonflux
 # Use an unprivileged user.
 USER appuser
 
+# Inform docker we listen on UDP port
+EXPOSE 2055/udp
+
 # Run the gonflux binary, push the netflow into influxdb over udp
 ENTRYPOINT ["/go/bin/gonflux"]
 
