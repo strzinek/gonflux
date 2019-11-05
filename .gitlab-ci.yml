@@ -55,6 +55,7 @@ docker-server-run:
       - ssh $DOCKER_DEPLOY_HOST "docker pull $IMAGE_NAME:$IMAGE_TAG"
       - ssh $DOCKER_DEPLOY_HOST "docker rm -vf $CI_PROJECT_NAME; exit 0"
       - ssh $DOCKER_DEPLOY_HOST "docker run --name=$CI_PROJECT_NAME -t --restart=always -p 2055:2055/udp -e METHOD='udp' -e OUT='192.168.8.82:8089' -d $IMAGE_NAME:$IMAGE_TAG"
+      - ssh $DOCKER_DEPLOY_HOST "docker logout $CI_REGISTRY"
     environment:
       name: docker-server
       url: $DOCKER_RUNTIME_URL
