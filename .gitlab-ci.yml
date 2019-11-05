@@ -20,7 +20,7 @@ compile:
 gitlab-push:
     stage: push-to-registry
     script:
-      - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+      - echo $CI_JOB_TOKEN | docker login -u gitlab-ci-token --password-stdin $CI_REGISTRY
       - docker push $IMAGE_NAME:$IMAGE_TAG
     only:
       - master
@@ -30,7 +30,7 @@ dockerhub-push:
     when: manual
     script:
       - docker tag $IMAGE_NAME $DOCKERHUB_REPO
-      - docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
+      - echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
       - docker push $DOCKERHUB_REPO
     only:
       - master
@@ -49,7 +49,7 @@ docker-server-run:
     stage: deploy
     when: manual
     script:
-      - ssh $DOCKER_DEPLOY_HOST "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
+      - ssh $DOCKER_DEPLOY_HOST "echo $CI_JOB_TOKEN | docker login -u gitlab-ci-token --password-stdin  $CI_REGISTRY"
       - ssh $DOCKER_DEPLOY_HOST "docker pull $IMAGE_NAME:$IMAGE_TAG"
       - ssh $DOCKER_DEPLOY_HOST "docker rm -vf $CI_PROJECT_NAME; exit 0"
       - ssh $DOCKER_DEPLOY_HOST "docker run --name=$CI_PROJECT_NAME -t --restart=always -p 2055:2055/udp -e METHOD='udp' -e OUT='192.168.8.82:8089' -d $IMAGE_NAME:$IMAGE_TAG"
